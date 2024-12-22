@@ -15,11 +15,14 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.format.ResolverStyle;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
@@ -35,31 +38,34 @@ public class InventoryServiceImpl implements InventoryService {
     InventoryCacheServiceImpl inventoryCacheService;
 
     @Override
-    public ResponseEntity<List<InventoryResponse>> getAllItems(){
+    @Async("threadPoolExecutor")
+    public CompletableFuture<List<InventoryResponse>> getAllItems() throws InterruptedException{
         try{
             log.info("Fetching all inventory items");
+//            Thread.sleep(1000);
             List<InventoryResponse> inventoryResponseList = inventoryCacheService.getAllItems();
-            return ResponseEntity.ok(inventoryResponseList);
+            return CompletableFuture.completedFuture(inventoryResponseList);
         }
         catch (Exception e){
             log.error(e.toString());
-            return ResponseEntity.internalServerError().body(null);
+            throw e;
         }
 
     }
 
     @Override
-    public ResponseEntity<InventoryResponse> getItemDetail(Long id) {
+    @Async("threadPoolExecutor")
+    public CompletableFuture<InventoryResponse> getItemDetail(Long id) {
         try{
             InventoryResponse inventoryResponse = inventoryCacheService.getItemDetail(id);
             if(inventoryResponse == null){
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                return CompletableFuture.completedFuture(null);
             }
-            return ResponseEntity.ok(inventoryResponse);
+            return CompletableFuture.completedFuture(inventoryResponse);
         }
         catch(Exception e){
             log.error(e.toString());
-            return ResponseEntity.internalServerError().body(null);
+            throw e;
         }
 
     }
@@ -67,30 +73,32 @@ public class InventoryServiceImpl implements InventoryService {
 
 
     @Override
-    public ResponseEntity addItem(InventoryAddRequest addRequest){
+    @Async("threadPoolExecutor")
+    public CompletableFuture<Boolean> addItem(InventoryAddRequest addRequest){
         try{
             boolean flag = inventoryCacheService.addItem(addRequest);
             if(!flag){
                 log.error("Item not added");
-                return ResponseEntity.internalServerError().body("Some error occurred");
+                return CompletableFuture.completedFuture(Boolean.FALSE);
             }
-            return ResponseEntity.accepted().body("Record added");
+            return CompletableFuture.completedFuture(Boolean.TRUE);
         }
         catch(Exception e){
             log.error(e.toString());
-            return ResponseEntity.internalServerError().body(null);
+            throw e;
         }
     }
 
     @Override
-    public ResponseEntity updateItem(Long id, InventoryUpdateRequest updateRequest){
+    @Async("threadPoolExecutor")
+    public CompletableFuture<Boolean> updateItem(Long id, InventoryUpdateRequest updateRequest){
         try{
             boolean flag = inventoryCacheService.updateItem(id,updateRequest);
             if(!flag){
                 log.error("Item not found");
-                return ResponseEntity.internalServerError().body("Item not found");
+                return CompletableFuture.completedFuture(Boolean.FALSE);
             }
-            return ResponseEntity.accepted().body("Record updated");
+            return CompletableFuture.completedFuture(Boolean.TRUE);
         }
         catch (TransactionalException tx){
             log.error("Error occurred while updating on request : {}, transaction rolled back",updateRequest);
@@ -102,13 +110,15 @@ public class InventoryServiceImpl implements InventoryService {
         }
     }
 
-    public ResponseEntity deleteItem(Long id){
+    @Override
+    @Async("threadPoolExecutor")
+    public CompletableFuture<Boolean> deleteItem(Long id){
         boolean flag = inventoryCacheService.deleteItem(id);
         if(!flag){
             log.error("Item not found");
-            return ResponseEntity.internalServerError().body("Item not found");
+            return CompletableFuture.completedFuture(Boolean.FALSE);
         }
-        return ResponseEntity.accepted().body("Record deleted");
+        return CompletableFuture.completedFuture(Boolean.TRUE);
     }
 
 

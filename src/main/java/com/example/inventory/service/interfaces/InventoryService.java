@@ -6,11 +6,12 @@ import com.example.inventory.dto.response.InventoryResponse;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 public interface InventoryService {
-    ResponseEntity<List<InventoryResponse>> getAllItems();
-    ResponseEntity<InventoryResponse> getItemDetail(Long id);
-    ResponseEntity addItem(InventoryAddRequest addRequest);
-    ResponseEntity updateItem(Long id, InventoryUpdateRequest updateRequest);
-    ResponseEntity deleteItem(Long id);
+    CompletableFuture<List<InventoryResponse>> getAllItems() throws InterruptedException ;
+    CompletableFuture<InventoryResponse> getItemDetail(Long id);
+    CompletableFuture<Boolean> addItem(InventoryAddRequest addRequest);
+    CompletableFuture<Boolean> updateItem(Long id, InventoryUpdateRequest updateRequest);
+    CompletableFuture<Boolean> deleteItem(Long id);
 }
