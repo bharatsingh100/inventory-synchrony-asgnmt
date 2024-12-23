@@ -71,7 +71,6 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
 
-
     @Override
     @Async("threadPoolExecutor")
     public CompletableFuture<Boolean> addItem(InventoryAddRequest addRequest){
